@@ -4,12 +4,10 @@ import com.seohamin.money.openbanking.domain.LinkedAccount;
 import com.seohamin.money.openbanking.service.BalanceService;
 import com.seohamin.money.openbanking.service.OpenBankingAuthService;
 import com.seohamin.money.openbanking.web.dto.AccountResponse;
+import com.seohamin.money.openbanking.web.dto.AuthorizeUrlResponse;
 import com.seohamin.money.openbanking.web.dto.BalanceResponse;
 import com.seohamin.money.openbanking.web.dto.LinkResult;
-import java.net.URI;
 import java.util.List;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -33,12 +31,13 @@ public class OpenBankingController {
         this.balanceService = balanceService;
     }
 
-    /** KFTC 사용자인증 페이지로 리다이렉트(302). 브라우저에서 동의를 진행한다. */
+    /**
+     * KFTC 사용자인증 URL을 JSON으로 반환한다. 반환된 authorizeUrl을 브라우저 주소창에서 열어 동의를 진행한다.
+     * (302 리다이렉트가 아니라 JSON이므로 Swagger의 fetch가 KFTC로 따라가며 나던 CORS 오류가 없다.)
+     */
     @GetMapping("/openbanking/authorize")
-    public ResponseEntity<Void> authorize() {
-        return ResponseEntity.status(HttpStatus.FOUND)
-                .location(URI.create(authService.buildAuthorizeUrl()))
-                .build();
+    public AuthorizeUrlResponse authorize() {
+        return new AuthorizeUrlResponse(authService.buildAuthorizeUrl());
     }
 
     /** authorize 후 KFTC가 호출하는 콜백. 토큰/계좌를 저장하고 user_seq_no와 계좌목록을 반환한다. */
