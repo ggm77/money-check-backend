@@ -7,6 +7,7 @@ import com.seohamin.money.domain.openbanking.dto.LinkResponseDto;
 import com.seohamin.money.domain.openbanking.entity.LinkedAccount;
 import com.seohamin.money.domain.openbanking.service.BalanceService;
 import com.seohamin.money.domain.openbanking.service.OpenBankingAuthService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -34,6 +35,7 @@ public class OpenBankingController {
      * (302 리다이렉트가 아니라 JSON이므로 Swagger의 fetch가 KFTC로 따라가며 나던 CORS 오류가 없다.)
      */
     @GetMapping("/openbanking/authorize")
+    @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<AuthorizeUrlResponseDto> authorize(
             @AuthenticationPrincipal final Long memberId) {
         return ResponseEntity.ok().body(new AuthorizeUrlResponseDto(authService.buildAuthorizeUrl(memberId)));
@@ -50,6 +52,7 @@ public class OpenBankingController {
 
     /** 연동된 계좌 목록 조회. */
     @GetMapping("/accounts")
+    @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<LinkResponseDto> accounts(@AuthenticationPrincipal final Long memberId) {
         return ResponseEntity.ok()
                 .body(new LinkResponseDto(toAccountResponses(authService.listAccounts(memberId))));
@@ -57,6 +60,7 @@ public class OpenBankingController {
 
     /** 잔액조회(핵심). fintechUseNum 생략 시 첫 계좌를 조회한다. */
     @GetMapping("/accounts/balance")
+    @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<BalanceResponseDto> balance(
             @AuthenticationPrincipal final Long memberId,
             @RequestParam(required = false) final String fintechUseNum) {

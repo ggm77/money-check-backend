@@ -84,6 +84,15 @@ class AuthSecurityIntegrationTest {
     }
 
     @Test
+    void swaggerDeclaresBearerAuthForAccounts() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(
+                                "$['paths']['/api/v1/accounts']['get']['security'][0]['bearerAuth']")
+                        .isArray());
+    }
+
+    @Test
     void memberCannotReadAnotherMembersAccounts() throws Exception {
         final Member owner = memberRepository.save(Member.builder()
                 .email("owner@example.com")
