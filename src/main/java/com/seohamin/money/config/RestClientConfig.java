@@ -15,12 +15,13 @@ import org.springframework.web.client.RestClient;
 public class RestClientConfig {
 
     @Bean
-    public RestClient openBankingRestClient(RestClient.Builder builder, OpenBankingProperties properties) {
+    public RestClient openBankingRestClient(OpenBankingProperties properties) {
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout(Duration.ofSeconds(5));
         requestFactory.setReadTimeout(Duration.ofSeconds(10));
 
-        return builder
+        // 정적 팩토리 사용: 자동구성된 RestClient.Builder 빈에 의존하지 않는다(기본 컨버터에 Jackson 포함).
+        return RestClient.builder()
                 .baseUrl(properties.baseUrl())
                 .requestFactory(requestFactory)
                 .build();
