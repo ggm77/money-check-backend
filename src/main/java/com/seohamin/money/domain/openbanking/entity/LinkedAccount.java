@@ -1,12 +1,16 @@
 package com.seohamin.money.domain.openbanking.entity;
 
+import com.seohamin.money.domain.member.entity.Member;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
@@ -28,12 +32,19 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Table(
         name = "linked_account",
         uniqueConstraints = @UniqueConstraint(name = "uk_la_fintech_use_num", columnNames = "fintech_use_num"),
-        indexes = @Index(name = "idx_la_user_seq_no", columnList = "user_seq_no"))
+        indexes = {
+            @Index(name = "idx_la_member_id", columnList = "member_id"),
+            @Index(name = "idx_la_user_seq_no", columnList = "user_seq_no")
+        })
 public class LinkedAccount {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
 
     @Column(name = "user_seq_no", nullable = false, length = 20)
     private String userSeqNo;
@@ -62,6 +73,7 @@ public class LinkedAccount {
 
     @Builder
     public LinkedAccount(
+            final Member member,
             final String userSeqNo,
             final String fintechUseNum,
             final String bankCodeStd,
@@ -70,6 +82,7 @@ public class LinkedAccount {
             final String accountNumMasked,
             final String accountHolderName
     ) {
+        this.member = member;
         this.userSeqNo = userSeqNo;
         this.fintechUseNum = fintechUseNum;
         this.bankCodeStd = bankCodeStd;

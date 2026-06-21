@@ -1,11 +1,15 @@
 package com.seohamin.money.domain.openbanking.entity;
 
+import com.seohamin.money.domain.member.entity.Member;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.Duration;
@@ -30,12 +34,19 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Getter
 @Table(
         name = "open_banking_token",
-        uniqueConstraints = @UniqueConstraint(name = "uk_obt_user_seq_no", columnNames = "user_seq_no"))
+        uniqueConstraints = {
+            @UniqueConstraint(name = "uk_obt_member_id", columnNames = "member_id"),
+            @UniqueConstraint(name = "uk_obt_user_seq_no", columnNames = "user_seq_no")
+        })
 public class OpenBankingToken {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
 
     @Column(name = "user_seq_no", nullable = false, length = 20)
     private String userSeqNo;
@@ -65,6 +76,7 @@ public class OpenBankingToken {
 
     @Builder
     public OpenBankingToken(
+            final Member member,
             final String userSeqNo,
             final String accessToken,
             final String refreshToken,
@@ -72,6 +84,7 @@ public class OpenBankingToken {
             final String scope,
             final Instant expiresAt
     ) {
+        this.member = member;
         this.userSeqNo = userSeqNo;
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
