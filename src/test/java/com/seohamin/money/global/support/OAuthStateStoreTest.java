@@ -1,4 +1,4 @@
-package com.seohamin.money.domain.openbanking.support;
+package com.seohamin.money.global.support;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

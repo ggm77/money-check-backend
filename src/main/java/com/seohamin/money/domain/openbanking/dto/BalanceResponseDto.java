@@ -1,6 +1,6 @@
 package com.seohamin.money.domain.openbanking.dto;
 
-import com.seohamin.money.domain.openbanking.client.dto.BalanceApiResponse;
+import com.seohamin.money.global.client.dto.BalanceApiResponse;
 
 /** 잔액조회 응답. 금액은 long으로 파싱해 제공한다. */
 public record BalanceResponseDto(

@@ -1,13 +1,13 @@
 package com.seohamin.money.domain.openbanking.service;
 
-import com.seohamin.money.domain.openbanking.client.OpenBankingClient;
-import com.seohamin.money.domain.openbanking.client.dto.BalanceApiResponse;
 import com.seohamin.money.domain.openbanking.dto.BalanceResponseDto;
 import com.seohamin.money.domain.openbanking.entity.LinkedAccount;
 import com.seohamin.money.domain.openbanking.repository.LinkedAccountRepository;
-import com.seohamin.money.domain.openbanking.support.BankTranIdGenerator;
 import com.seohamin.money.global.exception.CustomException;
 import com.seohamin.money.global.exception.constants.ExceptionCode;
+import com.seohamin.money.global.client.OpenBankingClient;
+import com.seohamin.money.global.client.dto.BalanceApiResponse;
+import com.seohamin.money.global.support.BankTranIdGenerator;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
