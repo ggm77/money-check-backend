@@ -69,4 +69,12 @@ public class Member {
         this.email = email;
         this.passwordHash = passwordHash;
     }
+
+    public void updateEmail(final String email) {
+        this.email = email;
+    }
+
+    public void updatePasswordHash(final String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
 }
