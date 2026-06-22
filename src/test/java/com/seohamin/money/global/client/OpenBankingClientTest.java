@@ -1,4 +1,4 @@
-package com.seohamin.money.domain.openbanking.client;
+package com.seohamin.money.global.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -7,9 +7,9 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
-import com.seohamin.money.domain.openbanking.client.dto.BalanceApiResponse;
-import com.seohamin.money.domain.openbanking.client.dto.TokenResponse;
 import com.seohamin.money.global.config.OpenBankingProperties;
+import com.seohamin.money.global.client.dto.BalanceApiResponse;
+import com.seohamin.money.global.client.dto.TokenResponse;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

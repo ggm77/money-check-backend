@@ -1,8 +1,8 @@
-package com.seohamin.money.domain.openbanking.client;
+package com.seohamin.money.global.client;
 
-import com.seohamin.money.domain.openbanking.client.dto.BalanceApiResponse;
-import com.seohamin.money.domain.openbanking.client.dto.TokenResponse;
-import com.seohamin.money.domain.openbanking.client.dto.UserInfoResponse;
+import com.seohamin.money.global.client.dto.BalanceApiResponse;
+import com.seohamin.money.global.client.dto.TokenResponse;
+import com.seohamin.money.global.client.dto.UserInfoResponse;
 import com.seohamin.money.global.config.OpenBankingProperties;
 import java.nio.charset.StandardCharsets;
 import lombok.RequiredArgsConstructor;

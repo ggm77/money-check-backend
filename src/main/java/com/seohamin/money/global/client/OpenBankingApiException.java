@@ -1,4 +1,4 @@
-package com.seohamin.money.domain.openbanking.client;
+package com.seohamin.money.global.client;
 
 import com.seohamin.money.global.exception.CustomException;
 import com.seohamin.money.global.exception.constants.ExceptionCode;

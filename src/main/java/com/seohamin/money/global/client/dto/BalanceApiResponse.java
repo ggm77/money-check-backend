@@ -1,4 +1,4 @@
-package com.seohamin.money.domain.openbanking.client.dto;
+package com.seohamin.money.global.client.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;

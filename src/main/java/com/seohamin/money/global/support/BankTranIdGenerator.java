@@ -1,4 +1,4 @@
-package com.seohamin.money.domain.openbanking.support;
+package com.seohamin.money.global.support;
 
 import com.seohamin.money.global.config.OpenBankingProperties;
 import java.util.concurrent.atomic.AtomicLong;
