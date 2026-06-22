@@ -1,6 +1,7 @@
 package com.seohamin.money.domain.member;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -28,6 +29,26 @@ class MemberUpdateIntegrationTest {
 
     @Autowired
     private MemberRepository memberRepository;
+
+    @Test
+    void getsCurrentMember() throws Exception {
+        final String accessToken = signup("member-info@example.com", "password123");
+        final Member member = memberRepository.findByEmail("member-info@example.com").orElseThrow();
+
+        mockMvc.perform(get("/api/v1/members/me")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(accessToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(member.getId()))
+                .andExpect(jsonPath("$.email").value("member-info@example.com"))
+                .andExpect(jsonPath("$.createdAt").isNotEmpty())
+                .andExpect(jsonPath("$.passwordHash").doesNotExist());
+    }
+
+    @Test
+    void memberLookupRequiresAuthentication() throws Exception {
+        mockMvc.perform(get("/api/v1/members/me"))
+                .andExpect(status().isUnauthorized());
+    }
 
     @Test
     void updatesEmail() throws Exception {

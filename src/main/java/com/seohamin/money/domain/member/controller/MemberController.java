@@ -1,5 +1,6 @@
 package com.seohamin.money.domain.member.controller;
 
+import com.seohamin.money.domain.member.dto.MemberResponseDto;
 import com.seohamin.money.domain.member.dto.UpdateEmailRequest;
 import com.seohamin.money.domain.member.dto.UpdatePasswordRequest;
 import com.seohamin.money.domain.member.service.MemberService;
@@ -9,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,6 +22,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class MemberController {
 
     private final MemberService memberService;
+
+    @GetMapping("/me")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<MemberResponseDto> getMember(
+            @AuthenticationPrincipal final Long memberId
+    ) {
+        return ResponseEntity.ok(memberService.getMember(memberId));
+    }
 
     @PatchMapping("/me/email")
     @SecurityRequirement(name = "bearerAuth")

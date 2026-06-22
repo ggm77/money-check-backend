@@ -1,5 +1,6 @@
 package com.seohamin.money.domain.member.service;
 
+import com.seohamin.money.domain.member.dto.MemberResponseDto;
 import com.seohamin.money.domain.member.dto.UpdateEmailRequest;
 import com.seohamin.money.domain.member.dto.UpdatePasswordRequest;
 import com.seohamin.money.domain.member.entity.Member;
@@ -18,6 +19,11 @@ public class MemberService {
 
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
+
+    @Transactional(readOnly = true)
+    public MemberResponseDto getMember(final Long memberId) {
+        return MemberResponseDto.of(findMember(memberId));
+    }
 
     @Transactional
     public void updateEmail(final Long memberId, final UpdateEmailRequest request) {
