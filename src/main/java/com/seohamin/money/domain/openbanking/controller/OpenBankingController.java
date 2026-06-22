@@ -58,12 +58,12 @@ public class OpenBankingController {
                 .body(new LinkResponseDto(toAccountResponses(authService.listAccounts(memberId))));
     }
 
-    /** 잔액조회(핵심). fintechUseNum 생략 시 첫 계좌를 조회한다. */
+    /** 지정한 핀테크이용번호의 계좌 잔액을 조회한다. */
     @GetMapping("/accounts/balance")
     @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<BalanceResponseDto> balance(
             @AuthenticationPrincipal final Long memberId,
-            @RequestParam(required = false) final String fintechUseNum) {
+            @RequestParam final String fintechUseNum) {
         return ResponseEntity.ok().body(balanceService.getBalance(memberId, fintechUseNum));
     }
 

@@ -156,6 +156,32 @@ class AuthSecurityIntegrationTest {
     }
 
     @Test
+    void balanceRequiresFintechUseNum() throws Exception {
+        final Member member = memberRepository.save(Member.builder()
+                .email("balance-required@example.com")
+                .passwordHash("unused")
+                .build());
+
+        mockMvc.perform(get("/api/v1/accounts/balance")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(member.getId())))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void balanceRejectsBlankFintechUseNum() throws Exception {
+        final Member member = memberRepository.save(Member.builder()
+                .email("balance-blank@example.com")
+                .passwordHash("unused")
+                .build());
+
+        mockMvc.perform(get("/api/v1/accounts/balance")
+                        .queryParam("fintechUseNum", " ")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(member.getId())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+    }
+
+    @Test
     void swaggerDeclaresBearerAuthForAccounts() throws Exception {
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())

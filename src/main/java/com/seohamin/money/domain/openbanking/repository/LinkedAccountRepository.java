@@ -9,8 +9,6 @@ public interface LinkedAccountRepository extends JpaRepository<LinkedAccount, Lo
 
     List<LinkedAccount> findByMemberId(Long memberId);
 
-    Optional<LinkedAccount> findFirstByMemberIdOrderByIdAsc(Long memberId);
-
     Optional<LinkedAccount> findByMemberIdAndFintechUseNum(Long memberId, String fintechUseNum);
 
     Optional<LinkedAccount> findByFintechUseNum(String fintechUseNum);
