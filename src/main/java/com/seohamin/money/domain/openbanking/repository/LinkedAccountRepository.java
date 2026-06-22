@@ -7,11 +7,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface LinkedAccountRepository extends JpaRepository<LinkedAccount, Long> {
 
-    List<LinkedAccount> findByUserSeqNo(String userSeqNo);
+    List<LinkedAccount> findByMemberId(Long memberId);
 
-    Optional<LinkedAccount> findFirstByUserSeqNoOrderByIdAsc(String userSeqNo);
+    Optional<LinkedAccount> findFirstByMemberIdOrderByIdAsc(Long memberId);
 
-    Optional<LinkedAccount> findByUserSeqNoAndFintechUseNum(String userSeqNo, String fintechUseNum);
+    Optional<LinkedAccount> findByMemberIdAndFintechUseNum(Long memberId, String fintechUseNum);
 
-    boolean existsByFintechUseNum(String fintechUseNum);
+    Optional<LinkedAccount> findByFintechUseNum(String fintechUseNum);
 }

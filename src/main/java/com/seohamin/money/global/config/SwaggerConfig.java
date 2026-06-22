@@ -1,7 +1,9 @@
 package com.seohamin.money.global.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -15,9 +17,16 @@ public class SwaggerConfig {
     @Bean
     public OpenAPI moneyCheckOpenAPI() {
         return new OpenAPI()
+                .components(new Components().addSecuritySchemes(
+                        "bearerAuth",
+                        new SecurityScheme()
+                                .type(SecurityScheme.Type.HTTP)
+                                .scheme("bearer")
+                                .bearerFormat("JWT")
+                                .description("로그인 응답의 accessToken만 입력하세요. Bearer 접두사는 자동으로 추가됩니다.")))
                 .info(new Info()
                         .title("money-check API")
-                        .description("KFTC 오픈뱅킹 잔액조회 서비스 API (사용자인증 → 토큰 → 계좌 → 잔액)")
+                        .description("JWT 로그인 기반 KFTC 오픈뱅킹 계좌·잔액조회 API")
                         .version("v0.0.1"));
     }
 }

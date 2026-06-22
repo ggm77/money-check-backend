@@ -17,6 +17,7 @@ application-prod.yaml
 application.yml
 application-dev.yml
 application-prod.yml
+!src/test/resources/application.yaml
 
 ### STS ###
 .apt_generated

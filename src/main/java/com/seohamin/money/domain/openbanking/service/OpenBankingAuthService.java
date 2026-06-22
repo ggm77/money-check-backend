@@ -1,5 +1,7 @@
 package com.seohamin.money.domain.openbanking.service;
 
+import com.seohamin.money.domain.member.entity.Member;
+import com.seohamin.money.domain.member.repository.MemberRepository;
 import com.seohamin.money.domain.openbanking.client.OpenBankingClient;
 import com.seohamin.money.domain.openbanking.client.dto.TokenResponse;
 import com.seohamin.money.domain.openbanking.client.dto.UserInfoResponse;
@@ -14,6 +16,7 @@ import com.seohamin.money.global.exception.constants.ExceptionCode;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,12 +40,13 @@ public class OpenBankingAuthService {
     private final OpenBankingClient client;
     private final OpenBankingProperties properties;
     private final OAuthStateStore stateStore;
+    private final MemberRepository memberRepository;
     private final OpenBankingTokenRepository tokenRepository;
     private final LinkedAccountRepository accountRepository;
 
     /** KFTC 사용자인증(authorize) URL을 생성한다. state는 발급 후 저장되어 콜백에서 검증된다. */
-    public String buildAuthorizeUrl() {
-        final String state = stateStore.issue();
+    public String buildAuthorizeUrl(final Long memberId) {
+        final String state = stateStore.issue(memberId);
         return UriComponentsBuilder.fromUriString(properties.baseUrl())
                 .path("/oauth/2.0/authorize")
                 .queryParam("response_type", "code")
@@ -58,28 +62,31 @@ public class OpenBankingAuthService {
     /**
      * 콜백 처리: state 검증 → 토큰 발급 → 사용자정보조회 → 토큰/계좌 저장.
      *
-     * @return 연동된 user_seq_no
+     * @return 연동을 시작한 서비스 사용자 ID
      */
     @Transactional
-    public String handleCallback(final String code, final String state) {
-        if (!stateStore.consume(state)) {
-            throw new CustomException(ExceptionCode.INVALID_OAUTH_STATE);
-        }
+    public Long handleCallback(final String code, final String state) {
+        final Long memberId = stateStore
+                .consume(state)
+                .orElseThrow(() -> new CustomException(ExceptionCode.INVALID_OAUTH_STATE));
+        final Member member = memberRepository
+                .findById(memberId)
+                .orElseThrow(() -> new CustomException(ExceptionCode.INVALID_OAUTH_STATE));
 
         final TokenResponse token = client.issueToken(code);
-        saveOrUpdateToken(token);
+        saveOrUpdateToken(member, token);
 
         final UserInfoResponse userInfo = client.getUserInfo(token.userSeqNo(), token.accessToken());
-        saveNewAccounts(token.userSeqNo(), userInfo);
+        saveNewAccounts(member, token.userSeqNo(), userInfo);
 
-        return token.userSeqNo();
+        return memberId;
     }
 
     /** 유효한 access token을 반환한다. 만료 임박 시 refresh_token으로 갱신 후 저장한다. */
     @Transactional
-    public String validAccessToken(final String userSeqNo) {
+    public String validAccessToken(final Long memberId) {
         final OpenBankingToken token = tokenRepository
-                .findByUserSeqNo(userSeqNo)
+                .findByMemberId(memberId)
                 .orElseThrow(() -> new CustomException(ExceptionCode.OPENBANKING_NOT_LINKED));
 
         if (token.isExpiringWithin(REFRESH_BUFFER)) {
@@ -94,21 +101,36 @@ public class OpenBankingAuthService {
     }
 
     @Transactional(readOnly = true)
-    public List<LinkedAccount> listAccounts(final String userSeqNo) {
-        final List<LinkedAccount> accounts = accountRepository.findByUserSeqNo(userSeqNo);
+    public List<LinkedAccount> listAccounts(final Long memberId) {
+        final List<LinkedAccount> accounts = accountRepository.findByMemberId(memberId);
         if (accounts.isEmpty()) {
             throw new CustomException(ExceptionCode.OPENBANKING_NOT_LINKED);
         }
         return accounts;
     }
 
-    private void saveOrUpdateToken(final TokenResponse token) {
+    private void saveOrUpdateToken(final Member member, final TokenResponse token) {
+        tokenRepository.findByUserSeqNo(token.userSeqNo()).ifPresent(existing -> {
+            if (!Objects.equals(existing.getMember().getId(), member.getId())) {
+                throw new CustomException(ExceptionCode.OPENBANKING_ALREADY_LINKED);
+            }
+        });
+
         tokenRepository
-                .findByUserSeqNo(token.userSeqNo())
+                .findByMemberId(member.getId())
                 .ifPresentOrElse(
-                        existing -> existing.renew(
-                                token.accessToken(), token.refreshToken(), expiresAt(token), token.scope()),
+                        existing -> {
+                            if (!Objects.equals(existing.getUserSeqNo(), token.userSeqNo())) {
+                                throw new CustomException(ExceptionCode.OPENBANKING_ALREADY_LINKED);
+                            }
+                            existing.renew(
+                                    token.accessToken(),
+                                    token.refreshToken(),
+                                    expiresAt(token),
+                                    token.scope());
+                        },
                         () -> tokenRepository.save(OpenBankingToken.builder()
+                                .member(member)
                                 .userSeqNo(token.userSeqNo())
                                 .accessToken(token.accessToken())
                                 .refreshToken(token.refreshToken())
@@ -118,16 +140,31 @@ public class OpenBankingAuthService {
                                 .build()));
     }
 
-    private void saveNewAccounts(final String userSeqNo, final UserInfoResponse userInfo) {
+    private void saveNewAccounts(
+            final Member member,
+            final String userSeqNo,
+            final UserInfoResponse userInfo
+    ) {
         if (userInfo.resList() == null) {
             return;
         }
         for (final UserInfoResponse.Account account : userInfo.resList()) {
-            if (account.fintechUseNum() == null
-                    || accountRepository.existsByFintechUseNum(account.fintechUseNum())) {
+            if (account.fintechUseNum() == null) {
                 continue;
             }
+
+            final LinkedAccount existing = accountRepository
+                    .findByFintechUseNum(account.fintechUseNum())
+                    .orElse(null);
+            if (existing != null) {
+                if (!Objects.equals(existing.getMember().getId(), member.getId())) {
+                    throw new CustomException(ExceptionCode.OPENBANKING_ALREADY_LINKED);
+                }
+                continue;
+            }
+
             accountRepository.save(LinkedAccount.builder()
+                    .member(member)
                     .userSeqNo(userSeqNo)
                     .fintechUseNum(account.fintechUseNum())
                     .bankCodeStd(account.bankCodeStd())

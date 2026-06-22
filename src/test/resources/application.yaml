@@ -1,0 +1,22 @@
+# 테스트 전용 설정: 외부 의존성(MariaDB/오픈뱅킹) 없이 컨텍스트가 뜨도록 H2 + 더미값 사용
+spring:
+  datasource:
+    url: jdbc:h2:mem:money;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+jwt:
+  secret: test-jwt-secret-must-be-at-least-32-bytes-long
+  access-token-expiration: 1h
+  refresh-token-expiration: 14d
+
+openbanking:
+  base-url: http://localhost:9999
+  client-id: test-client-id
+  client-secret: test-client-secret
+  redirect-uri: http://localhost:8080/api/v1/openbanking/callback
+  client-use-code: M202500001
+  scope: login inquiry

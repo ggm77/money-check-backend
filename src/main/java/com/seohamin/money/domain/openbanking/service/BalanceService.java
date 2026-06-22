@@ -30,12 +30,12 @@ public class BalanceService {
     /**
      * 사용자의 계좌 잔액을 조회한다.
      *
-     * @param userSeqNo 사용자 일련번호
+     * @param memberId 로그인 사용자 ID
      * @param fintechUseNum 조회할 핀테크이용번호. null이면 해당 사용자의 첫 계좌 사용.
      */
-    public BalanceResponseDto getBalance(final String userSeqNo, final String fintechUseNum) {
-        final String targetFintechUseNum = resolveFintechUseNum(userSeqNo, fintechUseNum);
-        final String accessToken = authService.validAccessToken(userSeqNo);
+    public BalanceResponseDto getBalance(final Long memberId, final String fintechUseNum) {
+        final String targetFintechUseNum = resolveFintechUseNum(memberId, fintechUseNum);
+        final String accessToken = authService.validAccessToken(memberId);
 
         final BalanceApiResponse response = client.getBalance(
                 targetFintechUseNum,
@@ -47,15 +47,15 @@ public class BalanceService {
     }
 
     /** fintechUseNum이 주어지면 사용자 소유인지 확인하고, 없으면 첫 계좌를 사용한다. */
-    private String resolveFintechUseNum(final String userSeqNo, final String fintechUseNum) {
+    private String resolveFintechUseNum(final Long memberId, final String fintechUseNum) {
         if (fintechUseNum != null && !fintechUseNum.isBlank()) {
             return accountRepository
-                    .findByUserSeqNoAndFintechUseNum(userSeqNo, fintechUseNum)
+                    .findByMemberIdAndFintechUseNum(memberId, fintechUseNum)
                     .map(LinkedAccount::getFintechUseNum)
                     .orElseThrow(() -> new CustomException(ExceptionCode.OPENBANKING_NOT_LINKED));
         }
         return accountRepository
-                .findFirstByUserSeqNoOrderByIdAsc(userSeqNo)
+                .findFirstByMemberIdOrderByIdAsc(memberId)
                 .map(LinkedAccount::getFintechUseNum)
                 .orElseThrow(() -> new CustomException(ExceptionCode.OPENBANKING_NOT_LINKED));
     }
