@@ -1,10 +1,12 @@
 package com.seohamin.money.domain.auth;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.jayway.jsonpath.JsonPath;
 import com.seohamin.money.domain.member.entity.Member;
 import com.seohamin.money.domain.member.repository.MemberRepository;
 import com.seohamin.money.domain.openbanking.entity.LinkedAccount;
@@ -48,8 +50,10 @@ class AuthSecurityIntegrationTest {
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.accessToken").isNotEmpty())
+                .andExpect(jsonPath("$.refreshToken").isNotEmpty())
                 .andExpect(jsonPath("$.tokenType").value("Bearer"))
-                .andExpect(jsonPath("$.expiresInSeconds").value(3600));
+                .andExpect(jsonPath("$.expiresInSeconds").value(3600))
+                .andExpect(jsonPath("$.refreshTokenExpiresInSeconds").value(1209600));
     }
 
     @Test
@@ -74,7 +78,75 @@ class AuthSecurityIntegrationTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").isNotEmpty())
+                .andExpect(jsonPath("$.refreshToken").isNotEmpty())
                 .andExpect(jsonPath("$.tokenType").value("Bearer"));
+    }
+
+    @Test
+    void refreshTokenIssuesNewTokenPair() throws Exception {
+        final String signupResponse = mockMvc.perform(post("/api/v1/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "refresh@example.com",
+                                  "password": "password123"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        final String refreshToken = JsonPath.read(signupResponse, "$.refreshToken");
+
+        final String refreshResponse = mockMvc.perform(post("/api/v1/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "refreshToken": "%s"
+                                }
+                                """.formatted(refreshToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").isNotEmpty())
+                .andExpect(jsonPath("$.refreshToken").isNotEmpty())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        final String renewedRefreshToken = JsonPath.read(refreshResponse, "$.refreshToken");
+
+        assertThat(renewedRefreshToken).isNotEqualTo(refreshToken);
+    }
+
+    @Test
+    void accessTokenCannotBeUsedAsRefreshToken() throws Exception {
+        final Member member = memberRepository.save(Member.builder()
+                .email("invalid-refresh@example.com")
+                .passwordHash("unused")
+                .build());
+        final String accessToken = jwtTokenProvider.createAccessToken(member.getId());
+
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "refreshToken": "%s"
+                                }
+                                """.formatted(accessToken)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("INVALID_REFRESH_TOKEN"));
+    }
+
+    @Test
+    void refreshTokenCannotAccessProtectedApi() throws Exception {
+        final Member member = memberRepository.save(Member.builder()
+                .email("refresh-auth@example.com")
+                .passwordHash("unused")
+                .build());
+
+        mockMvc.perform(get("/api/v1/accounts")
+                        .header(
+                                HttpHeaders.AUTHORIZATION,
+                                "Bearer " + jwtTokenProvider.createRefreshToken(member.getId())))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -121,6 +193,6 @@ class AuthSecurityIntegrationTest {
     }
 
     private String bearer(final Long memberId) {
-        return "Bearer " + jwtTokenProvider.createToken(memberId);
+        return "Bearer " + jwtTokenProvider.createAccessToken(memberId);
     }
 }

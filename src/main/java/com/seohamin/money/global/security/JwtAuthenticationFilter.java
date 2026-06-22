@@ -32,7 +32,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
         if (authorization != null && authorization.startsWith(BEARER_PREFIX)) {
             final String token = authorization.substring(BEARER_PREFIX.length()).trim();
-            final Optional<Long> memberId = jwtTokenProvider.parseMemberId(token);
+            final Optional<Long> memberId = jwtTokenProvider.parseAccessToken(token);
             if (memberId.isEmpty()) {
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "유효하지 않은 JWT입니다.");
                 return;

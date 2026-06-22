@@ -2,6 +2,7 @@ package com.seohamin.money.domain.auth.controller;
 
 import com.seohamin.money.domain.auth.dto.AuthTokenResponse;
 import com.seohamin.money.domain.auth.dto.LoginRequest;
+import com.seohamin.money.domain.auth.dto.RefreshTokenRequest;
 import com.seohamin.money.domain.auth.dto.SignupRequest;
 import com.seohamin.money.domain.auth.service.AuthService;
 import jakarta.validation.Valid;
@@ -28,5 +29,11 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthTokenResponse> login(@Valid @RequestBody final LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthTokenResponse> refresh(
+            @Valid @RequestBody final RefreshTokenRequest request) {
+        return ResponseEntity.ok(authService.refresh(request));
     }
 }

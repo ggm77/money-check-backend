@@ -5,6 +5,7 @@ import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.crypto.Mac;
@@ -20,27 +21,62 @@ public class JwtTokenProvider {
             "{\"alg\":\"HS256\",\"typ\":\"JWT\"}".getBytes(StandardCharsets.UTF_8));
     private static final Pattern SUBJECT_PATTERN = Pattern.compile("\"sub\":\"(\\d+)\"");
     private static final Pattern EXPIRATION_PATTERN = Pattern.compile("\"exp\":(\\d+)");
+    private static final Pattern TOKEN_TYPE_PATTERN = Pattern.compile("\"tokenType\":\"(ACCESS|REFRESH)\"");
 
     private final SecretKeySpec signingKey;
-    private final long expirationSeconds;
+    private final long accessTokenExpirationSeconds;
+    private final long refreshTokenExpirationSeconds;
 
     public JwtTokenProvider(final JwtProperties properties) {
         this.signingKey = new SecretKeySpec(
                 properties.secret().getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-        this.expirationSeconds = properties.accessTokenExpiration().toSeconds();
+        this.accessTokenExpirationSeconds = properties.accessTokenExpiration().toSeconds();
+        this.refreshTokenExpirationSeconds = properties.refreshTokenExpiration().toSeconds();
     }
 
-    public String createToken(final Long memberId) {
+    public String createAccessToken(final Long memberId) {
+        return createToken(memberId, TokenType.ACCESS, accessTokenExpirationSeconds);
+    }
+
+    public String createRefreshToken(final Long memberId) {
+        return createToken(memberId, TokenType.REFRESH, refreshTokenExpirationSeconds);
+    }
+
+    public Optional<Long> parseAccessToken(final String token) {
+        return parseMemberId(token, TokenType.ACCESS);
+    }
+
+    public Optional<Long> parseRefreshToken(final String token) {
+        return parseMemberId(token, TokenType.REFRESH);
+    }
+
+    public long getAccessTokenExpirationSeconds() {
+        return accessTokenExpirationSeconds;
+    }
+
+    public long getRefreshTokenExpirationSeconds() {
+        return refreshTokenExpirationSeconds;
+    }
+
+    private String createToken(
+            final Long memberId,
+            final TokenType tokenType,
+            final long expirationSeconds
+    ) {
         final long issuedAt = Instant.now().getEpochSecond();
         final long expiresAt = issuedAt + expirationSeconds;
         final String payload = ENCODER.encodeToString(
-                ("{\"sub\":\"" + memberId + "\",\"iat\":" + issuedAt + ",\"exp\":" + expiresAt + "}")
+                ("{\"sub\":\"" + memberId
+                        + "\",\"tokenType\":\"" + tokenType
+                        + "\",\"iat\":" + issuedAt
+                        + ",\"exp\":" + expiresAt
+                        + ",\"jti\":\"" + UUID.randomUUID() + "\"}")
                         .getBytes(StandardCharsets.UTF_8));
         final String unsignedToken = HEADER + "." + payload;
         return unsignedToken + "." + sign(unsignedToken);
     }
 
-    public Optional<Long> parseMemberId(final String token) {
+    private Optional<Long> parseMemberId(final String token, final TokenType expectedTokenType) {
         try {
             final String[] parts = token.split("\\.", -1);
             if (parts.length != 3 || !HEADER.equals(parts[0])) {
@@ -56,7 +92,11 @@ public class JwtTokenProvider {
             final String payload = new String(DECODER.decode(parts[1]), StandardCharsets.UTF_8);
             final Matcher subjectMatcher = SUBJECT_PATTERN.matcher(payload);
             final Matcher expirationMatcher = EXPIRATION_PATTERN.matcher(payload);
-            if (!subjectMatcher.find() || !expirationMatcher.find()) {
+            final Matcher tokenTypeMatcher = TOKEN_TYPE_PATTERN.matcher(payload);
+            if (!subjectMatcher.find() || !expirationMatcher.find() || !tokenTypeMatcher.find()) {
+                return Optional.empty();
+            }
+            if (!expectedTokenType.name().equals(tokenTypeMatcher.group(1))) {
                 return Optional.empty();
             }
 
@@ -65,13 +105,9 @@ public class JwtTokenProvider {
                 return Optional.empty();
             }
             return Optional.of(Long.parseLong(subjectMatcher.group(1)));
-        } catch (IllegalArgumentException exception) {
+        } catch (RuntimeException exception) {
             return Optional.empty();
         }
-    }
-
-    public long getExpirationSeconds() {
-        return expirationSeconds;
     }
 
     private String sign(final String value) {
@@ -86,5 +122,10 @@ public class JwtTokenProvider {
         } catch (Exception exception) {
             throw new IllegalStateException("JWT 서명 생성에 실패했습니다.", exception);
         }
+    }
+
+    private enum TokenType {
+        ACCESS,
+        REFRESH
     }
 }

@@ -2,6 +2,7 @@ package com.seohamin.money.domain.auth.service;
 
 import com.seohamin.money.domain.auth.dto.AuthTokenResponse;
 import com.seohamin.money.domain.auth.dto.LoginRequest;
+import com.seohamin.money.domain.auth.dto.RefreshTokenRequest;
 import com.seohamin.money.domain.auth.dto.SignupRequest;
 import com.seohamin.money.domain.member.entity.Member;
 import com.seohamin.money.domain.member.repository.MemberRepository;
@@ -48,10 +49,23 @@ public class AuthService {
         return issueToken(member);
     }
 
+    @Transactional(readOnly = true)
+    public AuthTokenResponse refresh(final RefreshTokenRequest request) {
+        final Long memberId = jwtTokenProvider
+                .parseRefreshToken(request.refreshToken())
+                .orElseThrow(() -> new CustomException(ExceptionCode.INVALID_REFRESH_TOKEN));
+        final Member member = memberRepository
+                .findById(memberId)
+                .orElseThrow(() -> new CustomException(ExceptionCode.INVALID_REFRESH_TOKEN));
+        return issueToken(member);
+    }
+
     private AuthTokenResponse issueToken(final Member member) {
         return AuthTokenResponse.bearer(
-                jwtTokenProvider.createToken(member.getId()),
-                jwtTokenProvider.getExpirationSeconds());
+                jwtTokenProvider.createAccessToken(member.getId()),
+                jwtTokenProvider.createRefreshToken(member.getId()),
+                jwtTokenProvider.getAccessTokenExpirationSeconds(),
+                jwtTokenProvider.getRefreshTokenExpirationSeconds());
     }
 
     private static String normalizeEmail(final String email) {

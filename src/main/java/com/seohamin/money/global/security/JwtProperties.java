@@ -4,7 +4,11 @@ import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties("jwt")
-public record JwtProperties(String secret, Duration accessTokenExpiration) {
+public record JwtProperties(
+        String secret,
+        Duration accessTokenExpiration,
+        Duration refreshTokenExpiration
+) {
 
     public JwtProperties {
         if (secret == null || secret.isBlank()) {
@@ -16,6 +20,13 @@ public record JwtProperties(String secret, Duration accessTokenExpiration) {
         if (accessTokenExpiration == null || accessTokenExpiration.isNegative()
                 || accessTokenExpiration.isZero()) {
             throw new IllegalArgumentException("jwt.access-token-expiration은 양수여야 합니다.");
+        }
+        if (refreshTokenExpiration == null || refreshTokenExpiration.isNegative()
+                || refreshTokenExpiration.isZero()) {
+            throw new IllegalArgumentException("jwt.refresh-token-expiration은 양수여야 합니다.");
+        }
+        if (refreshTokenExpiration.compareTo(accessTokenExpiration) <= 0) {
+            throw new IllegalArgumentException("refresh token 만료시간은 access token보다 길어야 합니다.");
         }
     }
 }
