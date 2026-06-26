@@ -8,6 +8,7 @@ import com.seohamin.money.domain.openbanking.entity.LinkedAccount;
 import com.seohamin.money.domain.openbanking.service.BalanceService;
 import com.seohamin.money.domain.openbanking.service.OpenBankingAuthService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import java.net.URI;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +28,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1")
 public class OpenBankingController {
 
+    private static final URI CALLBACK_SUCCESS_REDIRECT_URI = URI.create("https://money.seohamin.com/#assets");
+
     private final OpenBankingAuthService authService;
     private final BalanceService balanceService;
 
@@ -43,11 +46,12 @@ public class OpenBankingController {
 
     /** authorize 후 KFTC가 호출하는 콜백. state에 바인딩된 사용자의 토큰/계좌를 저장한다. */
     @GetMapping("/openbanking/callback")
-    public ResponseEntity<LinkResponseDto> callback(
+    public ResponseEntity<Void> callback(
             @RequestParam final String code, @RequestParam final String state) {
-        final Long memberId = authService.handleCallback(code, state);
-        return ResponseEntity.ok()
-                .body(new LinkResponseDto(toAccountResponses(authService.listAccounts(memberId))));
+        authService.handleCallback(code, state);
+        return ResponseEntity.status(302)
+                .location(CALLBACK_SUCCESS_REDIRECT_URI)
+                .build();
     }
 
     /** 연동된 계좌 목록 조회. */
